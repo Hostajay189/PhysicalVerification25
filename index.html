@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>क्लोजिंग बैलेंस के आधार पर की गई कार्यवाही दर्ज करे (मार्च-2025)</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f2f2f2;
+      padding: 10px;
+      text-align: center;
+    }
+	input[type="text"] {
+  	width: 60%;
+	}
+
+    select, input, button {
+      margin: 5px;
+      padding: 8px;
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #e0e0e0;
+	   font-size: 15px;
+    }
+    #saveBtn {
+      background-color: #4CAF50;
+      color: white;
+      border: red;
+      cursor: pointer;
+	 margin-top: 30px;
+  padding: 12px 24px;
+  font-size: 16px;
+    }
+    #saveBtn:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h2>क्लोजिंग बैलेंस के आधार पर की गई कार्यवाही दर्ज करे (मार्च-2025)</h2>
+
+  <label for="areaType">क्षेत्र चुनें</label>
+  <select id="areaType" onchange="updateBlocks()">
+    <option value="">--चयन करें--</option>
+    <option value="urban">शहरी</option>
+    <option value="rural">ग्रामीण</option>
+  </select>
+
+  <label for="block">ब्लॉक चुनें</label>
+  <select id="block" onchange="updateIDs()">
+    <option value="">--ब्लॉक चुनें--</option>
+  </select>
+
+  <label for="id">ID चुनें</label>
+  <select id="id" onchange="fetchSchemeData()">
+
+    <option value="">--ID चुनें--</option>
+  </select>
+
+  <form id="dataForm">
+    <table>
+      <thead>
+        <tr>
+          <th>स.क्र</th>
+          <th>स्कीम का नाम</th>
+          <th>क्लोजिंग बैलेंस</th>
+          <th>एंट्री मात्रा (क्विंटल में)</th>
+          <th>प्राप्ती योग्य मात्रा (क्विंटल में)</th>
+          <th>कारण बताओ नोटिस जारी किया गया</th>
+          <th>RRC जारी</th>
+          <th id="rrcNoTh" style="display:nonee;">RRC आदेश क्रमांक</th>
+          <th id="rrcDateTh" style="display:nonee;">RRC आदेश दिनांक</th>
+          <th>दुकान निरस्त किया गया</th>
+          <th>दुकान निलंबित किया गया</th>
+          <th>एफ आई आर दर्ज किया गया</th>
+          <th>तकनीकी त्रुटि</th>
+          <th>कारण</th>
+          <th>मात्रा (क्विंटल में)</th>
+        </tr>
+      </thead>
+      <tbody id="formRows">
+        <!-- Rows will be added by JS -->
+      </tbody>
+    </table>
+    <button id="saveBtn" type="submit">Save</button>
+	
+
+  <script>
+    const getDataURL = "https://script.google.com/macros/s/AKfycbz2wTb0Ro6sy7cosZx1WO2DU3_NNbH4gqFIBexZyPEHCZ3iY3T7znOwAF-3-c87AOVQNw/exec"; // स्कीम डेटा प्राप्त करने के लिए
+    const postDataURL = "https://script.google.com/macros/s/AKfycbz2wTb0Ro6sy7cosZx1WO2DU3_NNbH4gqFIBexZyPEHCZ3iY3T7znOwAF-3-c87AOVQNw/exec"; // डेटा सेव करने के लिए
+    const schemeNames = ["APL", "BPL", "SUGAR", "SALT", "GRAM"];
+
+    const blocks = {
+      urban: ["जैजैपुर", "सक्ती", "नयाबाराद्वार", "अडभार", "चंद्रपुर", "डभरा"],
+      rural: ["जैजैपुर", "सक्ती", "मालखरौदा", "डभरा"]
+    };
+
+    const ids = {
+      rural: { "जैजैपुर": ["542006001", "542006002"] },
+      urban: { "जैजैपुर": ["541014051"] }
+    };
+
+    function updateBlocks() {
+      const area = document.getElementById("areaType").value;
+      const blockSelect = document.getElementById("block");
+      blockSelect.innerHTML = '<option value="">--ब्लॉक चुनें--</option>';
+      blocks[area]?.forEach(block => {
+        blockSelect.innerHTML += `<option value="${block}">${block}</option>`;
+      });
+      document.getElementById("id").innerHTML = '<option value="">--ID चुनें--</option>';
+    }
+
+    function updateIDs() {
+      const area = document.getElementById("areaType").value;
+      const block = document.getElementById("block").value;
+      const idSelect = document.getElementById("id");
+      idSelect.innerHTML = '<option value="">--ID चुनें--</option>';
+      ids[area]?.[block]?.forEach(id => {
+        idSelect.innerHTML += `<option value="${id}">${id}</option>`;
+      });
+    }
+
+    function createTableRows() {
+      const tbody = document.getElementById("formRows");
+      tbody.innerHTML = "";
+      schemeNames.forEach((scheme, i) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${scheme}</td>
+            <td><input type="text" name="closingBalance"></td>
+            <td><input type="text" name="entryQty"></td>
+            <td><input type="text" name="eligibleQty"></td>
+            <td><select name="notice"><option value="">--</option><option>Yes</option><option>No</option></select></td>
+            <td><select name="rrc" onchange="toggleRRC(this)"><option value="">--</option><option>Yes</option><option>No</option></select></td>
+            <td><input type="text" name="rrcNo" style="display:none;"></td>
+            <td><input type="date" name="rrcDate" style="display:none;"></td>
+            <td><select name="cancelled"><option value="">--</option><option>Yes</option><option>No</option></select></td>
+            <td><select name="suspended"><option value="">--</option><option>Yes</option><option>No</option></select></td>
+            <td><select name="fir"><option value="">--</option><option>Yes</option><option>No</option></select></td>
+            <td><select name="technical"><option value="">--</option><option>Yes</option><option>No</option></select></td>
+            <td><textarea name="reason" rows="2"></textarea></td>
+            <td><input type="text" name="quantity"></td>
+          </tr>`;
+      });
+    }
+
+    function toggleRRC(select) {
+      const row = select.closest("tr");
+      row.querySelector("input[name='rrcNo']").style.display = select.value === "Yes" ? "inline" : "none";
+      row.querySelector("input[name='rrcDate']").style.display = select.value === "Yes" ? "inline" : "none";
+    }
+
+    function fetchSchemeData() {
+      const id = document.getElementById("id").value;
+      if (!id) return;
+      fetch(`${getDataURL}?id=${id}`)
+        .then(res => res.json())
+        .then(data => {
+          const rows = document.querySelectorAll("#formRows tr");
+          rows.forEach((row, i) => {
+            row.querySelector("input[name='closingBalance']").value = data[schemeNames[i]]?.closingBalance || "";
+            row.querySelector("input[name='entryQty']").value = data[schemeNames[i]]?.entryQty || "";
+            row.querySelector("input[name='eligibleQty']").value = data[schemeNames[i]]?.eligibleQty || "";
+          });
+        });
+    }
+
+    document.getElementById("dataForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const id = document.getElementById("id").value;
+      const block = document.getElementById("block").value;
+      const rows = document.querySelectorAll("#formRows tr");
+      const schemes = Array.from(rows).map((row, i) => ({
+        scheme: schemeNames[i],
+        closingBalance: row.querySelector("input[name='closingBalance']").value,
+        entryQty: row.querySelector("input[name='entryQty']").value,
+        eligibleQty: row.querySelector("input[name='eligibleQty']").value,
+        notice: row.querySelector("select[name='notice']").value,
+        rrc: row.querySelector("select[name='rrc']").value,
+        rrcNo: row.querySelector("input[name='rrcNo']").value,
+        rrcDate: row.querySelector("input[name='rrcDate']").value,
+        cancelled: row.querySelector("select[name='cancelled']").value,
+        suspended: row.querySelector("select[name='suspended']").value,
+        fir: row.querySelector("select[name='fir']").value,
+        technical: row.querySelector("select[name='technical']").value,
+        reason: row.querySelector("textarea[name='reason']").value,
+        quantity: row.querySelector("input[name='quantity']").value
+      }));
+
+      fetch(postDataURL, {
+        method: "POST",
+        body: JSON.stringify({ id, block, schemes }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert(msg);
+        document.getElementById("dataForm").reset();
+        createTableRows();
+      })
+      .catch(err => alert("त्रुटि: " + err));
+    });
+
+    createTableRows();
+  </script>
+</body>
+</html>
